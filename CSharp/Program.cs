@@ -9,7 +9,7 @@ public class Program
 {
     public static void Main()
     {
-        Tasks.Start();
-        //Game_card.Start();
+        //Tasks.Start();
+        Game_card.Start();
     }
 }

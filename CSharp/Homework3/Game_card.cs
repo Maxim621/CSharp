@@ -34,206 +34,238 @@ namespace CSharp.Homework3
             King = 4
         }
 
-        public static void Start()
+        private class Card
         {
-            int playerScore = 0;
-            int computerScore = 0;
-            int gamesPlayed = 0;
-            int playerWins = 0;
-            int computerWins = 0;
-            bool continuePlaying = true;
-            Random random = new Random();
+            public Suit Suit { get; set; }
+            public Rank Rank { get; set; }
 
-            Console.WriteLine("Welcome to the game of 21!");
-
-            while (continuePlaying)
+            public int GetCardValue()
             {
-                gamesPlayed++;
+                return (int)Rank;
+            }
+        }
 
-                Console.WriteLine("\nNew Game:");
+        private class Deck
+        {
+            private List<Card> cards;
+            private Random random;
 
-                List<string> deck = CreateDeck();
+            public Deck()
+            {
+                cards = new List<Card>();
+                random = new Random();
+                foreach (Suit suit in Enum.GetValues(typeof(Suit)))
+                {
+                    foreach (Rank rank in Enum.GetValues(typeof(Rank)))
+                    {
+                        cards.Add(new Card { Suit = suit, Rank = rank });
+                    }
+                }
+            }
 
-                ShuffleDeck(deck, random);
+            public void Shuffle()
+            {
+                int n = cards.Count;
+                while (n > 1)
+                {
+                    n--;
+                    int k = random.Next(n + 1);
+                    Card temp = cards[k];
+                    cards[k] = cards[n];
+                    cards[n] = temp;
+                }
+            }
 
-                List<string> playerHand = new List<string>();
-                List<string> computerHand = new List<string>();
+            public Card DrawCard()
+            {
+                if (cards.Count == 0)
+                {
+                    throw new InvalidOperationException("Deck is empty");
+                }
 
-                DealInitialCards(deck, playerHand, computerHand);
+                Card card = cards[0];
+                cards.RemoveAt(0);
+                return card;
+            }
+        }
 
-                bool playerTurn = DetermineFirstPlayer();
+        private class Player
+        {
+            public List<Card> Hand { get; set; }
+            public int Score { get; set; }
 
-                Console.WriteLine("\nYour turn!");
+            public Player()
+            {
+                Hand = new List<Card>();
+                Score = 0;
+            }
 
-                playerScore = CalculateScore(playerHand);
-                Console.WriteLine($"Your score: {playerScore}");
+            public void ReceiveCard(Card card)
+            {
+                Hand.Add(card);
+                Score += card.GetCardValue();
+            }
 
-                while (playerTurn)
+            public void PrintHand()
+            {
+                foreach (Card card in Hand)
+                {
+                    Console.WriteLine($"{card.Rank} of {card.Suit}");
+                }
+            }
+        }
+
+        public class Game
+        {
+            private Player player;
+            private Player computer;
+            private Deck deck;
+
+            public int PlayerWins { get; private set; }
+            public int ComputerWins { get; private set; }
+            public int GamesPlayed { get; private set; }
+
+            public Game()
+            {
+                player = new Player();
+                computer = new Player();
+                deck = new Deck();
+                PlayerWins = 0;
+                ComputerWins = 0;
+                GamesPlayed = 0;
+            }
+
+            public void Play()
+            {
+                Console.WriteLine("Welcome to the game of 21!");
+
+                while (true)
+                {
+                    StartNewRound();
+
+                    Console.WriteLine("\nDo you want to play again? (Y/N)");
+                    string playAgainResponse = Console.ReadLine().ToUpper();
+                    if (playAgainResponse != "Y")
+                    {
+                        break;
+                    }
+                }
+
+                Console.WriteLine("\nThank you for playing!");
+
+                Console.WriteLine("\nOverall game statistics:");
+                Console.WriteLine($"Games played: {GamesPlayed}");
+                Console.WriteLine($"Player wins: {PlayerWins}");
+                Console.WriteLine($"Computer wins: {ComputerWins}");
+            }
+
+            private void StartNewRound()
+            {
+                GamesPlayed++;
+
+                Console.WriteLine("\nNew round started.");
+
+                deck.Shuffle();
+
+                player.Hand.Clear();
+                computer.Hand.Clear();
+                player.Score = 0;
+                computer.Score = 0;
+
+                player.ReceiveCard(deck.DrawCard());
+                computer.ReceiveCard(deck.DrawCard());
+                player.ReceiveCard(deck.DrawCard());
+                computer.ReceiveCard(deck.DrawCard());
+
+                Console.WriteLine("\nPlayer's hand:");
+                player.PrintHand();
+
+                Console.WriteLine("\nComputer's hand:");
+                Console.WriteLine("Face down card");
+                computer.PrintHand();
+
+                PlayTurn(player);
+                if (player.Score <= 21)
+                {
+                    PlayTurn(computer);
+                }
+
+                DetermineWinner();
+            }
+
+            private void PlayTurn(Player currentPlayer)
+            {
+                while (currentPlayer.Score < 21)
                 {
                     Console.WriteLine("Do you want another card? (Y/N)");
                     string response = Console.ReadLine().ToUpper();
 
                     if (response == "Y")
                     {
-                        DealCard(deck, playerHand);
-                        playerScore = CalculateScore(playerHand);
-                        Console.WriteLine($"Your score: {playerScore}");
-
-                        if (playerScore > 21)
-                        {
-                            Console.WriteLine("You have exceeded 21. You lose!");
-                            computerWins++;
-                            playerTurn = false;
-                        }
-                        else if (playerScore == 21)
-                        {
-                            Console.WriteLine("Congratulations! You scored 21. You win!");
-                            playerWins++;
-                            playerTurn = false;
-                        }
+                        currentPlayer.ReceiveCard(deck.DrawCard());
+                        Console.WriteLine($"Your score: {currentPlayer.Score}");
                     }
                     else if (response == "N")
                     {
-                        Console.WriteLine("You chose to stop. It's computer's turn now.");
-                        playerTurn = false;
+                        Console.WriteLine("You chose to stop.");
+                        break;
                     }
                     else
                     {
                         Console.WriteLine("Invalid input. Please enter Y or N.");
                     }
                 }
-
-                if (playerScore <= 21)
-                {
-                    Console.WriteLine("\nComputer's turn!");
-
-                    computerScore = CalculateScore(computerHand);
-
-                    while (computerScore < playerScore && computerScore < 21)
-                    {
-                        DealCard(deck, computerHand);
-                        computerScore = CalculateScore(computerHand);
-                    }
-
-                    Console.WriteLine($"Computer score: {computerScore}");
-
-                    if (computerScore > 21)
-                    {
-                        Console.WriteLine("Computer has exceeded 21. You win!");
-                        playerWins++;
-                    }
-                    else if (computerScore == 21)
-                    {
-                        Console.WriteLine("Computer scored 21. Computer wins!");
-                        computerWins++;
-                    }
-                    else
-                    {
-                        if (computerScore > playerScore)
-                        {
-                            Console.WriteLine("Computer has a higher score. Computer wins!");
-                            computerWins++;
-                        }
-                        else if (playerScore > computerScore)
-                        {
-                            Console.WriteLine("You have a higher score. You win!");
-                            playerWins++;
-                        }
-                        else
-                        {
-                            Console.WriteLine("It's a tie!");
-                        }
-                    }
-                }
-
-                Console.WriteLine("\nGame over!");
-                Console.WriteLine($"Player wins: {playerWins}");
-                Console.WriteLine($"Computer wins: {computerWins}");
-
-                Console.WriteLine("\nDo you want to play again? (Y/N)");
-                string playAgainResponse = Console.ReadLine().ToUpper();
-                continuePlaying = (playAgainResponse == "Y");
             }
 
-            Console.WriteLine("\nThank you for playing!");
-
-            Console.WriteLine("\nOverall game statistics:");
-            Console.WriteLine($"Games played: {gamesPlayed}");
-            Console.WriteLine($"Player wins: {playerWins}");
-            Console.WriteLine($"Computer wins: {computerWins}");
-        }
-
-        static List<string> CreateDeck()
-        {
-            List<string> deck = new List<string>();
-
-            foreach (Suit suit in Enum.GetValues(typeof(Suit)))
+            private void DetermineWinner()
             {
-                foreach (Rank rank in Enum.GetValues(typeof(Rank)))
+                int playerScore = player.Score;
+                int computerScore = computer.Score;
+
+                Console.WriteLine($"Player score: {playerScore}");
+                Console.WriteLine($"Computer score: {computerScore}");
+
+                if (playerScore > 21)
                 {
-                    deck.Add($"{rank} of {suit}");
+                    Console.WriteLine("You have exceeded 21. You lose!");
+                    ComputerWins++;
+                }
+                else if (playerScore == 21 || (player.Hand.Count == 2 && playerScore == 22))
+                {
+                    Console.WriteLine("Congratulations! You scored 21. You win!");
+                    PlayerWins++;
+                }
+                else if (computerScore > 21)
+                {
+                    Console.WriteLine("Computer has exceeded 21. You win!");
+                    PlayerWins++;
+                }
+                else if (computerScore == 21 || (computer.Hand.Count == 2 && computerScore == 22))
+                {
+                    Console.WriteLine("Computer scored 21. Computer wins!");
+                    ComputerWins++;
+                }
+                else if (playerScore > computerScore)
+                {
+                    Console.WriteLine("You have a higher score. You win!");
+                    PlayerWins++;
+                }
+                else if (playerScore < computerScore)
+                {
+                    Console.WriteLine("Computer has a higher score. Computer wins!");
+                    ComputerWins++;
+                }
+                else
+                {
+                    Console.WriteLine("It's a tie!");
                 }
             }
-
-            return deck;
         }
 
-        static void ShuffleDeck(List<string> deck, Random random)
+        public static void Start()
         {
-            int n = deck.Count;
-            while (n > 1)
-            {
-                n--;
-                int k = random.Next(n + 1);
-                string temp = deck[k];
-                deck[k] = deck[n];
-                deck[n] = temp;
-            }
-        }
-
-        static void DealInitialCards(List<string> deck, List<string> playerHand, List<string> computerHand)
-        {
-            DealCard(deck, playerHand);
-            DealCard(deck, computerHand);
-            DealCard(deck, playerHand);
-            DealCard(deck, computerHand);
-
-            Console.WriteLine("\nPlayer's hand:");
-            foreach (string card in playerHand)
-            {
-                Console.WriteLine(card);
-            }
-
-            Console.WriteLine("\nComputer's hand:");
-            Console.WriteLine(computerHand[0]);
-            Console.WriteLine("Face down card");
-        }
-
-        static void DealCard(List<string> deck, List<string> hand)
-        {
-            string card = deck[0];
-            deck.RemoveAt(0);
-            hand.Add(card);
-        }
-
-        static bool DetermineFirstPlayer()
-        {
-            Console.WriteLine("Who receives the first cards? (P/C)");
-            string response = Console.ReadLine().ToUpper();
-            return (response == "P");
-        }
-
-        static int CalculateScore(List<string> hand)
-        {
-            int score = 0;
-
-            foreach (string card in hand)
-            {
-                Rank rank = (Rank)Enum.Parse(typeof(Rank), card.Split()[0]);
-                score += (int)rank;
-            }
-
-            return score;
+            Game game = new Game();
+            game.Play();
         }
     }
 }

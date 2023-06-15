@@ -85,28 +85,26 @@ namespace CSharp.Homework2
 
         public static void task4()
         {
-            string inputChars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890";
             int length = 10;
+            string availableCharacters = "abcdefghijklmnopqrstuvwxyz1234567890";
 
-            string randomString = GenerateRandomString(inputChars, length);
+            string randomString = GenerateRandomString(length, availableCharacters);
             Console.WriteLine(randomString);
         }
 
-        static Random random = new Random();
+        private static Random random = new Random();
 
-        static string GenerateRandomString(string inputChars, int length)
+        static string GenerateRandomString(int length, string characters)
         {
-            StringBuilder sb = new StringBuilder();
-            int charCount = inputChars.Length;
+            char[] chars = new char[length];
 
             for (int i = 0; i < length; i++)
             {
-                int randomIndex = random.Next(0, charCount);
-                char randomChar = inputChars[randomIndex];
-                sb.Append(randomChar);
+                int randomIndex = random.Next(characters.Length);
+                chars[i] = characters[randomIndex];
             }
 
-            return sb.ToString();
+            return new string(chars);
         }
 
         public static void task5()
@@ -268,109 +266,166 @@ namespace CSharp.Homework2
 
         public static void task7()
         {
-            string dnaSequence = "AAACCCCCGGTTGGGGG";
-            string compressedSequence = Compress(dnaSequence);
-            Console.WriteLine(compressedSequence); // Виведе "A3C5G2T2G5"
+            string input = "AAACCCGGGGGTTTT";
+            Console.WriteLine("Input: " + input);
 
-            string compressed = "A3C5G2T2G5";
-            string decompressedSequence = Decompress(compressedSequence);
-            Console.WriteLine(decompressedSequence); // Виведе "AAACCCCCGGTTGGGGG"
+            // Стиснення
+            string compressed = Lab2.Compress(input);
+            Console.WriteLine("Compressed: " + compressed);
+
+            // Декомпресія
+            string decompressed = Lab2.Decompress(compressed);
+            Console.WriteLine("Decompressed: " + decompressed);
         }
 
-        public static string Compress(string dnaSequence)
+        public static string Compress(string input)
         {
-            StringBuilder compressed = new StringBuilder();
-            int count = 1;
+            List<byte> compressedResult = new List<byte>();
 
-            for (int i = 1; i < dnaSequence.Length; i++)
+            int count = 1;
+            for (int i = 1; i < input.Length; i++)
             {
-                if (dnaSequence[i] == dnaSequence[i - 1])
+                if (input[i] == input[i - 1])
                 {
                     count++;
                 }
                 else
                 {
-                    compressed.Append(dnaSequence[i - 1]);
-                    compressed.Append(count);
+                    if (count > 2)
+                    {
+                        compressedResult.Add((byte)count);
+                        compressedResult.Add(GetNucleotideCode(input[i - 1]));
+                    }
+                    else
+                    {
+                        for (int j = 0; j < count; j++)
+                        {
+                            compressedResult.Add(GetNucleotideCode(input[i - 1]));
+                        }
+                    }
+
                     count = 1;
                 }
             }
 
-            // Додаємо останній символ та його кількість
-            compressed.Append(dnaSequence[dnaSequence.Length - 1]);
-            compressed.Append(count);
-
-            return compressed.ToString();
-        }
-
-        public static string Decompress(string compressed)
-        {
-            StringBuilder decompressedSequence = new StringBuilder();
-            char currentChar = compressed[0];
-
-            for (int i = 1; i < compressed.Length; i++)
+            // Додати останній символ та його повторення
+            if (count > 2)
             {
-                if (char.IsDigit(compressed[i]))
+                compressedResult.Add((byte)count);
+                compressedResult.Add(GetNucleotideCode(input[input.Length - 1]));
+            }
+            else
+            {
+                for (int j = 0; j < count; j++)
                 {
-                    int count = int.Parse(compressed[i].ToString());
-                    decompressedSequence.Append(new string(currentChar, count));
-                }
-                else
-                {
-                    currentChar = compressed[i];
+                    compressedResult.Add(GetNucleotideCode(input[input.Length - 1]));
                 }
             }
 
-            return decompressedSequence.ToString();
+            return Convert.ToBase64String(compressedResult.ToArray());
         }
+
+        public static string Decompress(string input)
+        {
+            byte[] compressedData = Convert.FromBase64String(input);
+            List<char> decompressedResult = new List<char>();
+
+            for (int i = 0; i < compressedData.Length; i += 2)
+            {
+                int count = compressedData[i];
+                char symbol = GetNucleotideFromCode(compressedData[i + 1]);
+
+                for (int j = 0; j < count; j++)
+                {
+                    decompressedResult.Add(symbol);
+                }
+            }
+
+            return new string(decompressedResult.ToArray());
+        }
+
+        private static byte GetNucleotideCode(char nucleotide)
+        {
+            switch (nucleotide)
+            {
+                case 'A':
+                    return 0;
+                case 'C':
+                    return 1;
+                case 'G':
+                    return 2;
+                case 'T':
+                    return 3;
+                default:
+                    throw new ArgumentException("Invalid nucleotide: " + nucleotide);
+            }
+        }
+
+        private static char GetNucleotideFromCode(byte code)
+        {
+            switch (code)
+            {
+                case 0:
+                    return 'A';
+                case 1:
+                    return 'C';
+                case 2:
+                    return 'G';
+                case 3:
+                    return 'T';
+                default:
+                    throw new ArgumentException("Invalid nucleotide code: " + code);
+            }
+        }
+
+        //---------------------------------------------------------------------------------
 
         public static void task8()
         {
-            byte[] key = new byte[16]; // Задайте ключ тут або згенеруйте його
+            string plainText = "Secret information";
 
-            string plaintext = "Hello, I'm Max!";
+            byte[] key = Lab2.GenerateRandomKey(16);
 
-            byte[] encryptedBytes = Encrypt(plaintext, key);
-            string encryptedText = Convert.ToBase64String(encryptedBytes);
+            string encryptedText = Lab2.EncryptString(plainText, key);
+            Console.WriteLine("Зашифрований текст: " + encryptedText);
 
-            Console.WriteLine("Encrypted text: " + encryptedText);
-
-            byte[] decryptedBytes = Convert.FromBase64String(encryptedText);
-            string decryptedText = Decrypt(decryptedBytes, key);
-
-            Console.WriteLine("Decoded text: " + decryptedText);
+            string decryptedText = Lab2.DecryptString(encryptedText, key);
+            Console.WriteLine("Дешифрований текст: " + decryptedText);
         }
 
-        static byte[] Encrypt(string plaintext, byte[] key)
+        private static byte[] GenerateRandomKey(int length)
         {
-            using (Aes aesAlg = Aes.Create())
-            {
-                aesAlg.Key = key;
-                aesAlg.Mode = CipherMode.ECB;
-
-                ICryptoTransform encryptor = aesAlg.CreateEncryptor(aesAlg.Key, aesAlg.IV);
-
-                byte[] plaintextBytes = Encoding.UTF8.GetBytes(plaintext);
-                byte[] encryptedBytes = encryptor.TransformFinalBlock(plaintextBytes, 0, plaintextBytes.Length);
-
-                return encryptedBytes;
-            }
+            byte[] key = new byte[length];
+            Random random = new Random();
+            random.NextBytes(key);
+            return key;
         }
 
-        static string Decrypt(byte[] ciphertext, byte[] key)
+        public static string EncryptString(string plainText, byte[] key)
         {
-            using (Aes aesAlg = Aes.Create())
+            byte[] plainBytes = Encoding.UTF8.GetBytes(plainText);
+            byte[] encryptedBytes = new byte[plainBytes.Length];
+
+            for (int i = 0; i < plainBytes.Length; i++)
             {
-                aesAlg.Key = key;
-                aesAlg.Mode = CipherMode.ECB;
-
-                ICryptoTransform decryptor = aesAlg.CreateDecryptor(aesAlg.Key, aesAlg.IV);
-
-                byte[] decryptedBytes = decryptor.TransformFinalBlock(ciphertext, 0, ciphertext.Length);
-                string plaintext = Encoding.UTF8.GetString(decryptedBytes);
-
-                return plaintext;
+                encryptedBytes[i] = (byte)(plainBytes[i] ^ key[i % key.Length]);
             }
+
+            return Convert.ToBase64String(encryptedBytes);
+        }
+
+        public static string DecryptString(string encryptedText, byte[] key)
+        {
+            byte[] encryptedBytes = Convert.FromBase64String(encryptedText);
+            byte[] decryptedBytes = new byte[encryptedBytes.Length];
+
+            for (int i = 0; i < encryptedBytes.Length; i++)
+            {
+                decryptedBytes[i] = (byte)(encryptedBytes[i] ^ key[i % key.Length]);
+            }
+
+            string decryptedText = Encoding.UTF8.GetString(decryptedBytes);
+            return decryptedText;
         }
     }
 }
