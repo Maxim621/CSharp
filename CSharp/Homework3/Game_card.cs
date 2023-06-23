@@ -9,112 +9,6 @@ namespace CSharp.Homework3
 
     public class Game_card
     {
-        enum Suit
-        {
-            Spades,
-            Hearts,
-            Diamonds,
-            Clubs
-        }
-
-        enum Rank
-        {
-            Ace = 11,
-            Two = 2,
-            Three = 3,
-            Four = 4,
-            Five = 5,
-            Six = 6,
-            Seven = 7,
-            Eight = 8,
-            Nine = 9,
-            Ten = 10,
-            Jack = 2,
-            Queen = 3,
-            King = 4
-        }
-
-        private class Card
-        {
-            public Suit Suit { get; set; }
-            public Rank Rank { get; set; }
-
-            public int GetCardValue()
-            {
-                return (int)Rank;
-            }
-        }
-
-        private class Deck
-        {
-            private List<Card> cards;
-            private Random random;
-
-            public Deck()
-            {
-                cards = new List<Card>();
-                random = new Random();
-                foreach (Suit suit in Enum.GetValues(typeof(Suit)))
-                {
-                    foreach (Rank rank in Enum.GetValues(typeof(Rank)))
-                    {
-                        cards.Add(new Card { Suit = suit, Rank = rank });
-                    }
-                }
-            }
-
-            public void Shuffle()
-            {
-                int n = cards.Count;
-                while (n > 1)
-                {
-                    n--;
-                    int k = random.Next(n + 1);
-                    Card temp = cards[k];
-                    cards[k] = cards[n];
-                    cards[n] = temp;
-                }
-            }
-
-            public Card DrawCard()
-            {
-                if (cards.Count == 0)
-                {
-                    throw new InvalidOperationException("Deck is empty");
-                }
-
-                Card card = cards[0];
-                cards.RemoveAt(0);
-                return card;
-            }
-        }
-
-        private class Player
-        {
-            public List<Card> Hand { get; set; }
-            public int Score { get; set; }
-
-            public Player()
-            {
-                Hand = new List<Card>();
-                Score = 0;
-            }
-
-            public void ReceiveCard(Card card)
-            {
-                Hand.Add(card);
-                Score += card.GetCardValue();
-            }
-
-            public void PrintHand()
-            {
-                foreach (Card card in Hand)
-                {
-                    Console.WriteLine($"{card.Rank} of {card.Suit}");
-                }
-            }
-        }
-
         public class Game
         {
             private Player player;
@@ -260,12 +154,6 @@ namespace CSharp.Homework3
                     Console.WriteLine("It's a tie!");
                 }
             }
-        }
-
-        public static void Start()
-        {
-            Game game = new Game();
-            game.Play();
         }
     }
 }
