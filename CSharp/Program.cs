@@ -10,8 +10,9 @@ public class Start
 {
     public static void Main()
     {
+        Lab2.task7();
         //Tasks.Start();
-        Game game = new Game();
-        game.Play();
+        //Game game = new Game();
+        //game.Play();
     }
 }

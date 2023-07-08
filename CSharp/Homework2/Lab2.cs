@@ -266,78 +266,88 @@ namespace CSharp.Homework2
 
         public static void task7()
         {
-            string input = "AAACCCGGGGGTTTT";
-            Console.WriteLine("Input: " + input);
+            string dnaSequence = "ACGTCATG";
+            byte[] compressedData = Compress(dnaSequence);
+            string decompressedData = Decompress(compressedData);
 
-            // Стиснення
-            string compressed = Lab2.Compress(input);
-            Console.WriteLine("Compressed: " + compressed);
-
-            // Декомпресія
-            string decompressed = Lab2.Decompress(compressed);
-            Console.WriteLine("Decompressed: " + decompressed);
+            Console.WriteLine("Original DNA sequence: " + dnaSequence);
+            Console.WriteLine("Compressed data: " + BitConverter.ToString(compressedData));
+            Console.WriteLine("Decompressed DNA sequence: " + decompressedData);
         }
 
-        public static string Compress(string input)
+        public static byte[] Compress(string input)
         {
             List<byte> compressedResult = new List<byte>();
 
             int count = 1;
+            char prevNucleotide = input[0];
             for (int i = 1; i < input.Length; i++)
             {
-                if (input[i] == input[i - 1])
+                if (input[i] == prevNucleotide)
                 {
                     count++;
+                    if (count == 16)
+                    {
+                        compressedResult.Add((byte)((count << 4) | GetNucleotideCode(prevNucleotide)));
+                        count = 0;
+                    }
                 }
                 else
                 {
                     if (count > 2)
                     {
-                        compressedResult.Add((byte)count);
-                        compressedResult.Add(GetNucleotideCode(input[i - 1]));
+                        compressedResult.Add((byte)((count << 4) | GetNucleotideCode(prevNucleotide)));
                     }
                     else
                     {
                         for (int j = 0; j < count; j++)
                         {
-                            compressedResult.Add(GetNucleotideCode(input[i - 1]));
+                            compressedResult.Add(GetNucleotideCode(prevNucleotide));
                         }
                     }
 
                     count = 1;
+                    prevNucleotide = input[i];
                 }
             }
 
-            // Додати останній символ та його повторення
             if (count > 2)
             {
-                compressedResult.Add((byte)count);
-                compressedResult.Add(GetNucleotideCode(input[input.Length - 1]));
+                compressedResult.Add((byte)((count << 4) | GetNucleotideCode(prevNucleotide)));
             }
             else
             {
                 for (int j = 0; j < count; j++)
                 {
-                    compressedResult.Add(GetNucleotideCode(input[input.Length - 1]));
+                    compressedResult.Add(GetNucleotideCode(prevNucleotide));
                 }
             }
 
-            return Convert.ToBase64String(compressedResult.ToArray());
+            return compressedResult.ToArray();
         }
 
-        public static string Decompress(string input)
+        public static string Decompress(byte[] input)
         {
-            byte[] compressedData = Convert.FromBase64String(input);
             List<char> decompressedResult = new List<char>();
 
-            for (int i = 0; i < compressedData.Length; i += 2)
+            for (int i = 0; i < input.Length; i++)
             {
-                int count = compressedData[i];
-                char symbol = GetNucleotideFromCode(compressedData[i + 1]);
+                int count = (input[i] >> 4) & 0x0F;
 
-                for (int j = 0; j < count; j++)
+                if (count > 2)
                 {
-                    decompressedResult.Add(symbol);
+                    char nucleotide = GetNucleotideFromCode((byte)(input[i] & 0x0F));
+                    for (int j = 0; j < count; j++)
+                    {
+                        decompressedResult.Add(nucleotide);
+                    }
+                }
+                else
+                {
+                    for (int j = 0; j <= count; j++)
+                    {
+                        decompressedResult.Add(GetNucleotideFromCode((byte)(input[i] & 0x0F)));
+                    }
                 }
             }
 

@@ -1,6 +1,4 @@
-﻿using System;
-
-enum Suit
+﻿enum Suit
 {
     Spades,
     Hearts,
