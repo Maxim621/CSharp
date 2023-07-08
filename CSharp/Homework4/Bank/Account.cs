@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace CSharp.Homework4
+namespace CSharp.Homework4.Bank
 {
     public class Account
     {

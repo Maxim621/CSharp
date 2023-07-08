@@ -1,10 +1,10 @@
-﻿namespace CSharp.Homework4
+﻿namespace CSharp.Homework4.BinarySearch
 {
     public class StartBinarySearchTree
     {
         public static void Start()
         {
-            BinarySearchTree tree = new BinarySearchTree();
+            RealizationBinarySearchTree tree = new RealizationBinarySearchTree();
 
             // Додавання елементів до дерева
             tree.Add(5);

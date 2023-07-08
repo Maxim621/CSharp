@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace CSharp.Homework4
+namespace CSharp.Homework4.QueueFolder
 {
     public class Queue
     {

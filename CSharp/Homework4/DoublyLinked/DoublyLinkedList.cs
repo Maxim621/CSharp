@@ -1,10 +1,10 @@
-﻿namespace CSharp.Homework4
+﻿namespace CSharp.Homework4.DoublyLinked
 {
     public class StartDoublyLinkedList
     {
         public static void Start()
         {
-            DoublyLinkedList list = new DoublyLinkedList();
+            RealizationDoublyLinkedList list = new RealizationDoublyLinkedList();
 
             list.Add("Apple");
             list.Add("Banana");

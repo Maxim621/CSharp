@@ -1,4 +1,4 @@
-﻿namespace CSharp.Homework4
+﻿namespace CSharp.Homework4.Bank
 {
     public class Client
     {

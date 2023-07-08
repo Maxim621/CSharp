@@ -1,4 +1,4 @@
-﻿namespace CSharp.Homework4
+﻿namespace CSharp.Homework4.QueueFolder
 {
     public class StartQueue
     {

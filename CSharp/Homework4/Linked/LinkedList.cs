@@ -1,10 +1,10 @@
-﻿namespace CSharp.Homework4
+﻿namespace CSharp.Homework4.Linked
 {
     public class StartLinkedList
     {
         public static void Start()
         {
-            LinkedList list = new LinkedList();
+            RealizationLinkedList list = new RealizationLinkedList();
 
             list.Add("Елемент 1");
             list.Add("Елемент 2");

@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace CSharp.Homework4
+namespace CSharp.Homework4.Bank
 {
     public enum TransactionType
     {
