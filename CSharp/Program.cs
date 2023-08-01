@@ -24,18 +24,18 @@ class Program
         Console.WriteLine("aaa;xabbx;abb;ccc;dap".Split(';').Any(s => s == "abb"));
 
         // Отримати найдовше слово в рядку "aaa;xabbx;abb;ccc;dap"
-        Console.WriteLine("aaa;xabbx;abb;ccc;dap".Split(';').OrderByDescending(s => s.Length).First());
+        Console.WriteLine("aaa;xabbx;abb;ccc;dap".Split(';').Aggregate("", (max, next) => next.Length > max.Length ? next : max));
 
         // Обчислити середню довжину слова в рядку "aaa;xabbx;abb;ccc;dap"
         Console.WriteLine("aaa;xabbx;abb;ccc;dap".Split(';').Average(s => s.Length));
 
         // Вивести найкоротше слово в рядку "aaa;xabbx;abb;ccc;dap;zh" у зворотному порядку
-        Console.WriteLine("aaa;xabbx;abb;ccc;dap;zh".Split(';').OrderBy(s => s.Length).First().Reverse());
+        Console.WriteLine("baaa;aabb;aaa;xabbx;abb;ccc;dap;zh".Split(';').FirstOrDefault(s => s.StartsWith("aa") && !s.Skip(2).Any(c => c != 'b')) != null);
 
         // Вивести true, якщо в першому слові, яке починається з "aa", усі літери "b" (За винятком "аа"), інакше false
         Console.WriteLine("baaa;aabb;aaa;xabbx;abb;ccc;dap;zh".Split(';').First(s => s.StartsWith("aa") && !s.Substring(2).Contains("b")) != null);
 
         // Вивести останнє слово в послідовності, за винятком перших двох елементів, які закінчуються на "bb" (використовуйте послідовність із 10 завдання)
-        Console.WriteLine("aaa;xabbx;abb;ccc;dap".Split(';').Skip(2).Where(s => !s.EndsWith("bb")).Last());
+        Console.WriteLine(string.Join(";", "aaa;xabbx;abb;ccc;dap".Split(';').Skip(2).Where(s => s.EndsWith("bb")).TakeLast(1)));
     }
 }
