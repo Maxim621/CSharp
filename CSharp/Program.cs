@@ -380,8 +380,7 @@ public class Program
 
             ICryptoTransform decryptor = aesAlg.CreateDecryptor(aesAlg.Key, aesAlg.IV);
 
-            byte[] decryptedBytes = decryptor.TransformFinalBlock(ciphertext, 0, ciphertext.Length);
-            string plaintext = Encoding.UTF8.GetString(decryptedBytes);
+        BankMenu.Start();
 
             return plaintext;
         }
