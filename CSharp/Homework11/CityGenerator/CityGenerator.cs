@@ -1,10 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 
-namespace CHarp.Homework11.CityGenerator
+namespace CSharp.Homework11.CityGenerator
 {
-    public class Program
+    class Program
     {
         static readonly string CitiesDataFile = "cities.txt";
 
