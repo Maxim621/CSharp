@@ -1,10 +1,11 @@
-﻿using System;
+﻿using CSharp.Homework12;
+using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
-namespace CSharp.Homework12
+namespace Charp.Homework12
 {
     public class TasksRunner
     {
@@ -62,17 +63,39 @@ namespace CSharp.Homework12
 
         public Dictionary<char, int> CalculateCharacterFrequency(string text)
         {
-            return ParallelTaskRunner<char>.RunParallelTask(numThreads, text.Length, i => text[i])
-                .GroupBy(c => c)
-                .ToDictionary(g => g.Key, g => g.Count());
+            var charFrequency = new Dictionary<char, int>();
+
+            Parallel.ForEach(text, c =>
+            {
+                lock (charFrequency)
+                {
+                    if (charFrequency.ContainsKey(c))
+                        charFrequency[c]++;
+                    else
+                        charFrequency[c] = 1;
+                }
+            });
+
+            return charFrequency;
         }
 
         public Dictionary<string, int> CalculateWordFrequency(string text)
         {
             var words = text.Split(new[] { ' ', '.', ',' }, StringSplitOptions.RemoveEmptyEntries);
-            return ParallelTaskRunner<string>.RunParallelTask(numThreads, words.Length, i => words[i])
-                .GroupBy(w => w)
-                .ToDictionary(g => g.Key, g => g.Count());
+            var wordFrequency = new Dictionary<string, int>();
+
+            Parallel.ForEach(words, word =>
+            {
+                lock (wordFrequency)
+                {
+                    if (wordFrequency.ContainsKey(word))
+                        wordFrequency[word]++;
+                    else
+                        wordFrequency[word] = 1;
+                }
+            });
+
+            return wordFrequency;
         }
 
         public void PrintArray(int[] array)
