@@ -1,33 +1,38 @@
-﻿using CSharp.Homework12;
+﻿using CSharp.Hoemwork12;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Charp.Homework12
+namespace CSharp.Homework12
 {
     public class TasksRunner
     {
         private int numThreads;
         private int arraySize;
         private int[] array;
+        private CancellationTokenSource cancellationTokenSource;
+        private CancellationToken cancellationToken;
 
         public TasksRunner(int numThreads, int arraySize)
         {
             this.numThreads = numThreads;
             this.arraySize = arraySize;
+
+            cancellationTokenSource = new CancellationTokenSource();
+            cancellationToken = cancellationTokenSource.Token;
         }
 
         public int[] GenerateRandomArray()
         {
             var random = new Random();
-            return ParallelTaskRunner<int>.RunParallelTask(numThreads, arraySize, _ => random.Next(1, 100));
+            return ParallelTaskRunner<int>.RunParallelTask(numThreads, arraySize, _ => random.Next(1, 100), cancellationToken);
         }
 
         public int[] GenerateArrayWithFunction(Func<int, int> function)
         {
-            return ParallelTaskRunner<int>.RunParallelTask(numThreads, arraySize, function);
+            return ParallelTaskRunner<int>.RunParallelTask(numThreads, arraySize, function, cancellationToken);
         }
 
         public int[] CopyArrayPart(int[] sourceArray, int startIndex, int length)
@@ -40,25 +45,25 @@ namespace Charp.Homework12
         public int FindMin()
         {
             array = GenerateRandomArray();
-            return ParallelTaskRunner<int>.RunParallelTask(numThreads, arraySize, i => array[i]).Min();
+            return ParallelTaskRunner<int>.RunParallelTask(numThreads, arraySize, i => array[i], cancellationToken).Min();
         }
 
         public int FindMax()
         {
             array = GenerateRandomArray();
-            return ParallelTaskRunner<int>.RunParallelTask(numThreads, arraySize, i => array[i]).Max();
+            return ParallelTaskRunner<int>.RunParallelTask(numThreads, arraySize, i => array[i], cancellationToken).Max();
         }
 
         public int FindSum()
         {
             array = GenerateRandomArray();
-            return ParallelTaskRunner<int>.RunParallelTask(numThreads, arraySize, i => array[i]).Sum();
+            return ParallelTaskRunner<int>.RunParallelTask(numThreads, arraySize, i => array[i], cancellationToken).Sum();
         }
 
         public double FindAverage()
         {
             array = GenerateRandomArray();
-            return ParallelTaskRunner<int>.RunParallelTask(numThreads, arraySize, i => array[i]).Average();
+            return ParallelTaskRunner<int>.RunParallelTask(numThreads, arraySize, i => array[i], cancellationToken).Average();
         }
 
         public Dictionary<char, int> CalculateCharacterFrequency(string text)
@@ -69,6 +74,9 @@ namespace Charp.Homework12
             {
                 lock (charFrequency)
                 {
+                    if (cancellationToken.IsCancellationRequested)
+                        return;
+
                     if (charFrequency.ContainsKey(c))
                         charFrequency[c]++;
                     else
@@ -88,6 +96,9 @@ namespace Charp.Homework12
             {
                 lock (wordFrequency)
                 {
+                    if (cancellationToken.IsCancellationRequested)
+                        return;
+
                     if (wordFrequency.ContainsKey(word))
                         wordFrequency[word]++;
                     else
@@ -103,12 +114,47 @@ namespace Charp.Homework12
             Console.WriteLine(string.Join(", ", array));
         }
 
+        public void PrintArrayWithProgress(int[] array)
+        {
+            for (int i = 0; i < array.Length; i++)
+            {
+                if (cancellationToken.IsCancellationRequested)
+                {
+                    Console.WriteLine("Операція скасована.");
+                    return;
+                }
+
+                Console.WriteLine($"Потік {Thread.CurrentThread.ManagedThreadId}: Елемент {i + 1}/{array.Length} - {array[i]}");
+            }
+        }
+
         public void PrintDictionary<TKey, TValue>(Dictionary<TKey, TValue> dictionary)
         {
             foreach (var item in dictionary)
             {
                 Console.WriteLine($"{item.Key}: {item.Value}");
             }
+        }
+
+        public void PrintDictionaryWithProgress<TKey, TValue>(Dictionary<TKey, TValue> dictionary)
+        {
+            int count = 0;
+            foreach (var item in dictionary)
+            {
+                if (cancellationToken.IsCancellationRequested)
+                {
+                    Console.WriteLine("Операція скасована.");
+                    return;
+                }
+
+                count++;
+                Console.WriteLine($"Потік {Thread.CurrentThread.ManagedThreadId}: Елемент {count}/{dictionary.Count} - {item.Key}: {item.Value}");
+            }
+        }
+
+        public void CancelTasks()
+        {
+            cancellationTokenSource.Cancel();
         }
     }
 }

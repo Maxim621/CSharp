@@ -1,10 +1,11 @@
 ﻿using System;
+using System.Threading.Tasks;
 
-namespace CSharp.Homework12
+namespace CSharp.Hoemwork12
 {
     public static class ParallelTaskRunner<T>
     {
-        public static T[] RunParallelTask(int numThreads, int arraySize, Func<int, T> taskFunction)
+        public static T[] RunParallelTask(int numThreads, int arraySize, Func<int, T> taskFunction, CancellationToken cancellationToken)
         {
             T[] resultArray = new T[arraySize];
             var tasks = new Task[arraySize];
@@ -12,7 +13,11 @@ namespace CSharp.Homework12
             for (int i = 0; i < arraySize; i++)
             {
                 int index = i;
-                tasks[i] = new Task(() => resultArray[index] = taskFunction(index));
+                tasks[i] = new Task(() =>
+                {
+                    if (!cancellationToken.IsCancellationRequested)
+                        resultArray[index] = taskFunction(index);
+                });
             }
 
             foreach (var task in tasks)
