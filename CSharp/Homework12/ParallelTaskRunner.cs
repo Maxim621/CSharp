@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace CSharp.Hoemwork12
@@ -8,24 +9,17 @@ namespace CSharp.Hoemwork12
         public static T[] RunParallelTask(int numThreads, int arraySize, Func<int, T> taskFunction, CancellationToken cancellationToken)
         {
             T[] resultArray = new T[arraySize];
-            var tasks = new Task[arraySize];
 
-            for (int i = 0; i < arraySize; i++)
+            ParallelOptions options = new ParallelOptions
             {
-                int index = i;
-                tasks[i] = new Task(() =>
-                {
-                    if (!cancellationToken.IsCancellationRequested)
-                        resultArray[index] = taskFunction(index);
-                });
-            }
+                MaxDegreeOfParallelism = numThreads,
+                CancellationToken = cancellationToken
+            };
 
-            foreach (var task in tasks)
+            Parallel.For(0, arraySize, options, i =>
             {
-                task.Start();
-            }
-
-            Task.WaitAll(tasks);
+                resultArray[i] = taskFunction(i);
+            });
 
             return resultArray;
         }

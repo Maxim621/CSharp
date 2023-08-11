@@ -1,11 +1,11 @@
 ﻿using CSharp.Hoemwork12;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
-using System.Threading.Tasks;
 
-namespace CSharp.Homework12
+namespace CSharp.Hoemwork12
 {
     public class TasksRunner
     {
@@ -37,9 +37,7 @@ namespace CSharp.Homework12
 
         public int[] CopyArrayPart(int[] sourceArray, int startIndex, int length)
         {
-            int[] copiedArray = new int[length];
-            Parallel.For(0, length, new ParallelOptions { MaxDegreeOfParallelism = numThreads }, i => copiedArray[i] = sourceArray[startIndex + i]);
-            return copiedArray;
+            return ParallelTaskRunner<int>.RunParallelTask(numThreads, length, i => sourceArray[startIndex + i], cancellationToken);
         }
 
         public int FindMin()
@@ -68,45 +66,33 @@ namespace CSharp.Homework12
 
         public Dictionary<char, int> CalculateCharacterFrequency(string text)
         {
-            var charFrequency = new Dictionary<char, int>();
+            ConcurrentDictionary<char, int> charFrequency = new ConcurrentDictionary<char, int>();
 
             Parallel.ForEach(text, c =>
             {
-                lock (charFrequency)
+                if (!cancellationToken.IsCancellationRequested)
                 {
-                    if (cancellationToken.IsCancellationRequested)
-                        return;
-
-                    if (charFrequency.ContainsKey(c))
-                        charFrequency[c]++;
-                    else
-                        charFrequency[c] = 1;
+                    charFrequency.AddOrUpdate(c, 1, (_, oldValue) => oldValue + 1);
                 }
             });
 
-            return charFrequency;
+            return charFrequency.ToDictionary(pair => pair.Key, pair => pair.Value);
         }
 
         public Dictionary<string, int> CalculateWordFrequency(string text)
         {
-            var words = text.Split(new[] { ' ', '.', ',' }, StringSplitOptions.RemoveEmptyEntries);
-            var wordFrequency = new Dictionary<string, int>();
+            string[] words = text.Split(new[] { ' ', '.', ',' }, StringSplitOptions.RemoveEmptyEntries);
+            ConcurrentDictionary<string, int> wordFrequency = new ConcurrentDictionary<string, int>();
 
             Parallel.ForEach(words, word =>
             {
-                lock (wordFrequency)
+                if (!cancellationToken.IsCancellationRequested)
                 {
-                    if (cancellationToken.IsCancellationRequested)
-                        return;
-
-                    if (wordFrequency.ContainsKey(word))
-                        wordFrequency[word]++;
-                    else
-                        wordFrequency[word] = 1;
+                    wordFrequency.AddOrUpdate(word, 1, (_, oldValue) => oldValue + 1);
                 }
             });
 
-            return wordFrequency;
+            return wordFrequency.ToDictionary(pair => pair.Key, pair => pair.Value);
         }
 
         public void PrintArray(int[] array)
@@ -118,12 +104,6 @@ namespace CSharp.Homework12
         {
             for (int i = 0; i < array.Length; i++)
             {
-                if (cancellationToken.IsCancellationRequested)
-                {
-                    Console.WriteLine("Операція скасована.");
-                    return;
-                }
-
                 Console.WriteLine($"Потік {Thread.CurrentThread.ManagedThreadId}: Елемент {i + 1}/{array.Length} - {array[i]}");
             }
         }
@@ -141,12 +121,6 @@ namespace CSharp.Homework12
             int count = 0;
             foreach (var item in dictionary)
             {
-                if (cancellationToken.IsCancellationRequested)
-                {
-                    Console.WriteLine("Операція скасована.");
-                    return;
-                }
-
                 count++;
                 Console.WriteLine($"Потік {Thread.CurrentThread.ManagedThreadId}: Елемент {count}/{dictionary.Count} - {item.Key}: {item.Value}");
             }
