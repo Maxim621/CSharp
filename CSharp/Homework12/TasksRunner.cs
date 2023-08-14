@@ -2,159 +2,97 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Numerics;
 using System.Threading;
 using System.Threading.Tasks;
 
 namespace CSharp.Homework12
 {
-    public class TasksRunner
+    public static class TasksRunner
     {
-        private int numThreads;
-        private int arraySize;
-        private int[] array;
-        private CancellationTokenSource cancellationTokenSource;
-        private CancellationToken cancellationToken;
-
-        public TasksRunner(int numThreads, int arraySize)
+        public static int[] GenerateRandomArray(int numThreads, int[] array, CancellationToken cancellationToken = default)
         {
-            this.numThreads = numThreads;
-            this.arraySize = arraySize;
-
-            cancellationTokenSource = new CancellationTokenSource();
-            cancellationToken = cancellationTokenSource.Token;
+            new RandomParallelTaskRunner(numThreads, array).RunParallelTask(cancellationToken);
+            return array;
         }
 
-        public int[] GenerateRandomArray()
+        public static T[] GenerateArrayWithFunction<T>(int numThreads, T[] array, Func<int, T> function, CancellationToken cancellationToken = default)
         {
-            var random = new Random();
-            return ParallelTaskRunner<int>.RunParallelTask(numThreads, arraySize, _ => random.Next(1, 100), cancellationToken);
+            new FuncParallelTaskRunner<T>(numThreads, array, function).RunParallelTask(cancellationToken);
+            return array;
         }
 
-        public int[] GenerateArrayWithFunction(Func<int, int> function)
+        public static T[] CopyArrayPart<T>(int numThreads, T[] sourceArray, int startIndex, int length, CancellationToken cancellationToken = default)
         {
-            return ParallelTaskRunner<int>.RunParallelTask(numThreads, arraySize, function, cancellationToken);
+            var runner = new CopyParallelTaskRunner<T>(numThreads, sourceArray, startIndex, length);
+            runner.RunParallelTask(cancellationToken);
+
+            return runner.Result;
         }
 
-        public int[] CopyArrayPart(int[] sourceArray, int startIndex, int length)
+        public static T FindMin<T>(int numThreads, T[] array, CancellationToken cancellationToken = default) where T : INumber<T>
         {
-            int[] copiedArray = new int[length];
-            Parallel.For(0, length, new ParallelOptions { MaxDegreeOfParallelism = numThreads }, i => copiedArray[i] = sourceArray[startIndex + i]);
-            return copiedArray;
+            var runner = new MinParallelTaskRunner<T>(numThreads, array);
+            runner.RunParallelTask(cancellationToken);
+
+            return runner.Result;
         }
 
-        public int FindMin()
+        public static T FindMax<T>(int numThreads, T[] array, CancellationToken cancellationToken = default) where T : INumber<T>
         {
-            array = GenerateRandomArray();
-            return ParallelTaskRunner<int>.RunParallelTask(numThreads, arraySize, i => array[i], cancellationToken).Min();
+            var runner = new MaxParallelTaskRunner<T>(numThreads, array);
+            runner.RunParallelTask(cancellationToken);
+
+            return runner.Result;
         }
 
-        public int FindMax()
+        public static decimal FindSum<T>(int numThreads, T[] array, CancellationToken cancellationToken = default) where T : INumber<T>
         {
-            array = GenerateRandomArray();
-            return ParallelTaskRunner<int>.RunParallelTask(numThreads, arraySize, i => array[i], cancellationToken).Max();
+            var runner = new SumParallelTaskRunner<T>(numThreads, array);
+            runner.RunParallelTask(cancellationToken);
+
+            return runner.Result;
         }
 
-        public int FindSum()
+        public static decimal FindAverage<T>(int numThreads, T[] array, CancellationToken cancellationToken = default) where T : INumber<T>
         {
-            array = GenerateRandomArray();
-            return ParallelTaskRunner<int>.RunParallelTask(numThreads, arraySize, i => array[i], cancellationToken).Sum();
+            var runner = new AvgParallelTaskRunner<T>(numThreads, array);
+            runner.RunParallelTask(cancellationToken);
+
+            return runner.Result;
         }
 
-        public double FindAverage()
+        public static Dictionary<char, int> CalculateCharacterFrequency(int numThreads, string[] lines, CancellationToken cancellationToken = default)
         {
-            array = GenerateRandomArray();
-            return ParallelTaskRunner<int>.RunParallelTask(numThreads, arraySize, i => array[i], cancellationToken).Average();
+            var runner = new CharacterFrequencyParallelTaskRunner(numThreads, lines);
+            runner.RunParallelTask(cancellationToken);
+
+            return runner.Result;
         }
 
-        public Dictionary<char, int> CalculateCharacterFrequency(string text)
+        public static Dictionary<string, int> CalculateWordFrequency(int numThreads, string[] lines, CancellationToken cancellationToken = default)
         {
-            var charFrequency = new Dictionary<char, int>();
-
-            Parallel.ForEach(text, c =>
-            {
-                lock (charFrequency)
-                {
-                    if (cancellationToken.IsCancellationRequested)
-                        return;
-
-                    if (charFrequency.ContainsKey(c))
-                        charFrequency[c]++;
-                    else
-                        charFrequency[c] = 1;
-                }
-            });
-
-            return charFrequency;
+            var runner = new WordFrequencyParallelTaskRunner(numThreads, lines);
+            runner.RunParallelTask(cancellationToken);
+            return runner.Result;
         }
 
-        public Dictionary<string, int> CalculateWordFrequency(string text)
-        {
-            var words = text.Split(new[] { ' ', '.', ',' }, StringSplitOptions.RemoveEmptyEntries);
-            var wordFrequency = new Dictionary<string, int>();
-
-            Parallel.ForEach(words, word =>
-            {
-                lock (wordFrequency)
-                {
-                    if (cancellationToken.IsCancellationRequested)
-                        return;
-
-                    if (wordFrequency.ContainsKey(word))
-                        wordFrequency[word]++;
-                    else
-                        wordFrequency[word] = 1;
-                }
-            });
-
-            return wordFrequency;
-        }
-
-        public void PrintArray(int[] array)
-        {
-            Console.WriteLine(string.Join(", ", array));
-        }
-
-        public void PrintArrayWithProgress(int[] array)
+        public static void PrintArray(int[] array)
         {
             for (int i = 0; i < array.Length; i++)
             {
-                if (cancellationToken.IsCancellationRequested)
-                {
-                    Console.WriteLine("Операція скасована.");
-                    return;
-                }
-
-                Console.WriteLine($"Потік {Thread.CurrentThread.ManagedThreadId}: Елемент {i + 1}/{array.Length} - {array[i]}");
+                Console.WriteLine($"Елемент {i + 1}/{array.Length} - {array[i]}");
             }
         }
 
-        public void PrintDictionary<TKey, TValue>(Dictionary<TKey, TValue> dictionary)
-        {
-            foreach (var item in dictionary)
-            {
-                Console.WriteLine($"{item.Key}: {item.Value}");
-            }
-        }
-
-        public void PrintDictionaryWithProgress<TKey, TValue>(Dictionary<TKey, TValue> dictionary)
+        public static void PrintDictionary<TKey, TValue>(Dictionary<TKey, TValue> dictionary)
         {
             int count = 0;
             foreach (var item in dictionary)
             {
-                if (cancellationToken.IsCancellationRequested)
-                {
-                    Console.WriteLine("Операція скасована.");
-                    return;
-                }
-
                 count++;
-                Console.WriteLine($"Потік {Thread.CurrentThread.ManagedThreadId}: Елемент {count}/{dictionary.Count} - {item.Key}: {item.Value}");
+                Console.WriteLine($"Елемент {count}/{dictionary.Count} - {item.Key}: {item.Value}");
             }
-        }
-
-        public void CancelTasks()
-        {
-            cancellationTokenSource.Cancel();
         }
     }
 }
