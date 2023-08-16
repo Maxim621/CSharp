@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.IO;
 using System.Net;
 using System.Net.Sockets;
@@ -12,6 +13,7 @@ class ClientHandler
     private string name;
     private StreamWriter writer;
     private ConcurrentDictionary<string, ClientHandler> clients;
+    private List<string> messageHistory = new List<string>();
 
     public ClientHandler(TcpClient client, string name, ConcurrentDictionary<string, ClientHandler> clients)
     {
@@ -33,25 +35,23 @@ class ClientHandler
         {
             StreamReader reader = new StreamReader(client.GetStream(), Encoding.UTF8);
 
+            // Send history to the new client
+            SendHistory();
+
             while (true)
             {
                 string message = reader.ReadLine();
                 Console.WriteLine("Received: " + message);
 
-                if (message.StartsWith("@"))
+                if (!string.IsNullOrEmpty(message))
                 {
-                    string[] parts = message.Split(' ', 2);
-                    if (parts.Length >= 2 && clients.TryGetValue(parts[0].Substring(1), out var privateClient))
+                    messageHistory.Add($"[{name}]: {message}");
+
+                    if (messageHistory.Count > 100)
                     {
-                        privateClient.writer.WriteLine($"[Private from {name}]: {parts[1]}");
+                        messageHistory.RemoveAt(0); // Keep a limited history
                     }
-                    else
-                    {
-                        writer.WriteLine("User not found or invalid format.");
-                    }
-                }
-                else
-                {
+
                     foreach (var client in clients.Values)
                     {
                         if (client != this)
@@ -70,6 +70,14 @@ class ClientHandler
         finally
         {
             client.Close();
+        }
+    }
+
+    public void SendHistory()
+    {
+        foreach (var message in messageHistory)
+        {
+            writer.WriteLine(message);
         }
     }
 }
