@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -52,18 +53,40 @@ namespace CSharp.Homework14
             Console.WriteLine($"Сума: {await Task.Run(() => TasksRunner.FindSum(numThreads, functionArray, cancellationToken))}");
             Console.WriteLine($"Середнє: {await Task.Run(() => TasksRunner.FindAverage(numThreads, functionArray, cancellationToken))}");
 
-            Console.WriteLine("Введіть довгий книжковий текст або рядок для аналізу:");
-            string[] text = File.ReadAllLines("cities.txt");
+            Console.WriteLine("Введіть шлях до файлу з даними:");
+            string filePath = Console.ReadLine();
 
-            Console.WriteLine("Частотний словник символів:");
-            var charFrequency = await Task.Run(() => TasksRunner.CalculateCharacterFrequency(numThreads, text, cancellationToken));
-            TasksRunner.PrintDictionary(charFrequency);
-
-            Console.WriteLine("Частотний словник слів:");
-            var wordFrequency = await Task.Run(() => TasksRunner.CalculateWordFrequency(numThreads, text, cancellationToken));
-            TasksRunner.PrintDictionary(wordFrequency);
+            var lines = await ReadLinesAsync(filePath, cancellationToken);
+            await ProcessCharacterFrequency(lines, numThreads, cancellationToken);
+            await ProcessWordFrequency(lines, numThreads, cancellationToken);
 
             await cancelTask;
+        }
+
+        static async Task<string[]> ReadLinesAsync(string filePath, CancellationToken cancellationToken)
+        {
+            var lines = new List<string>();
+            using (var reader = new StreamReader(filePath))
+            {
+                string line;
+                while ((line = await reader.ReadLineAsync()) != null && !cancellationToken.IsCancellationRequested)
+                {
+                    lines.Add(line);
+                }
+            }
+            return lines.ToArray();
+        }
+
+        static async Task ProcessCharacterFrequency(string[] lines, int numThreads, CancellationToken cancellationToken)
+        {
+            var charFrequency = await Task.Run(() => TasksRunner.CalculateCharacterFrequency(numThreads, lines, cancellationToken));
+            TasksRunner.PrintDictionary(charFrequency);
+        }
+
+        static async Task ProcessWordFrequency(string[] lines, int numThreads, CancellationToken cancellationToken)
+        {
+            var wordFrequency = await Task.Run(() => TasksRunner.CalculateWordFrequency(numThreads, lines, cancellationToken));
+            TasksRunner.PrintDictionary(wordFrequency);
         }
     }
 }
