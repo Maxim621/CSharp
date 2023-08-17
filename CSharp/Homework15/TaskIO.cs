@@ -33,6 +33,9 @@ class Generator
 
             progress -= bufferSize;
         }
+
+        // Дочекатися завершення останньої операції запису
+        await task;
     }
 
     private IEnumerator<byte[]> GetBuffers(int length)
@@ -59,45 +62,38 @@ class Parser
 
     public async Task Parse()
     {
-        var buffer = new byte[500 * 1024 * 1024];
-        var bufferResult = new byte[500 * 1024 * 1024];
-        var semaphore = new SemaphoreSlim(1); // Для обмеження одночасних записів
+        var readBuffer = new byte[500 * 1024 * 1024];
+        var processBuffer = new byte[500 * 1024 * 1024];
 
         await using var stream = File.OpenRead(_path);
         await using var resultStream = File.OpenWrite("../../../../result.bin");
 
-        while (stream.Position < stream.Length)
+        while (true)
         {
-            var count = await stream.ReadAsync(buffer, 0, buffer.Length);
+            var readCount = await stream.ReadAsync(readBuffer, 0, readBuffer.Length);
+            if (readCount == 0)
+                break;
 
-            var tasks = new List<Task>();
-
-            for (int i = 0; i < count; i++)
+            var processCount = 0;
+            for (int i = 0; i < readCount; i++)
             {
-                var ch = (char)buffer[i];
+                var ch = (char)readBuffer[i];
                 if (char.IsAscii(ch))
                 {
-                    bufferResult[i] = buffer[i];
+                    processBuffer[processCount] = readBuffer[i];
+                    processCount++;
                 }
             }
 
-            var resultCount = bufferResult.Take(count).Count(b => b != 0);
-
-            await semaphore.WaitAsync();
-            try
-            {
-                await resultStream.WriteAsync(bufferResult, 0, resultCount);
-            }
-            finally
-            {
-                semaphore.Release();
-            }
+            await resultStream.WriteAsync(processBuffer, 0, processCount);
         }
     }
 }
 
 internal class Program
 {
+    private static string _path;
+
     private static async Task Main(string[] args)
     {
         var gen = new Generator("../../../../data.bin");
@@ -107,9 +103,8 @@ internal class Program
         await genTask;
         await parser.Parse();
 
-        foreach (var line in await File.ReadAllLinesAsync("../../../../result.bin"))
+        await foreach (var line in File.ReadLinesAsync(_path))
         {
-            // Обробка кожного рядка зі result.bin
             Console.WriteLine(line);
         }
 
