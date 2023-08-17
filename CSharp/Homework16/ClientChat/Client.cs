@@ -21,8 +21,9 @@ namespace CSharp.Homework16.ClientChat
             string name = Console.ReadLine();
             writer.WriteLine(name);
 
-            // Додано: Потік для пошуку серверів
+            // Зміни: Потік для пошуку серверів як фоновий
             Thread searchThread = new Thread(SearchForServers);
+            searchThread.IsBackground = true; // Встановити як фоновий
             searchThread.Start();
 
             Thread receiveThread = new Thread(() => ReceiveMessages(reader));
@@ -44,7 +45,6 @@ namespace CSharp.Homework16.ClientChat
             }
         }
 
-        // Метод для пошуку серверів у мережі
         static void SearchForServers()
         {
             UdpClient udpClient = new UdpClient();
@@ -55,20 +55,17 @@ namespace CSharp.Homework16.ClientChat
 
             udpClient.Send(discoveryData, discoveryData.Length, serverEndPoint);
 
-            IPEndPoint receiveEndPoint = new IPEndPoint(IPAddress.Any, 0);
-            byte[] response = udpClient.Receive(ref receiveEndPoint);
-            string responseMessage = Encoding.UTF8.GetString(response);
-
-            if (responseMessage == "ServerFound")
+            while (true)
             {
-                Console.WriteLine("Server found in the network.");
-            }
-            else
-            {
-                Console.WriteLine("No servers found in the network.");
-            }
+                IPEndPoint receiveEndPoint = new IPEndPoint(IPAddress.Any, 0);
+                byte[] response = udpClient.Receive(ref receiveEndPoint);
+                string responseMessage = Encoding.UTF8.GetString(response);
 
-            udpClient.Close();
+                if (responseMessage == "ServerFound")
+                {
+                    Console.WriteLine($"Server found at IP: {receiveEndPoint.Address} Port: {receiveEndPoint.Port}");
+                }
+            }
         }
     }
 }
